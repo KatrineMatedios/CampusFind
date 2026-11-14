@@ -58,6 +58,21 @@ export function timeAgo(value: string): string {
 
 export function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError<ValidationErrors>(error)) {
+    // No response received: network failure, CORS block, mixed-content block,
+    // DNS failure, or an unreachable/wrong API URL.
+    if (!error.response) {
+      if (error.code === "ERR_NETWORK") {
+        return "Cannot reach the server. Check your internet connection, and make sure the API URL is configured and uses HTTPS.";
+      }
+      if (error.code === "ECONNABORTED") {
+        return "The request timed out. Please try again.";
+      }
+      return (
+        error.message ||
+        "Cannot reach the server. Check your internet connection and API configuration."
+      );
+    }
+
     const firstError = error.response?.data?.errors
       ? Object.values(error.response.data.errors)[0]?.[0]
       : undefined;
