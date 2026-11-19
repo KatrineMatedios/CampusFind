@@ -16,6 +16,7 @@ CampusFind/
 ## Prerequisites
 
 - PHP 8.2+ with Composer
+- MySQL (e.g. XAMPP) running locally
 - Node.js 20+ with npm
 
 ## Setup
@@ -32,7 +33,7 @@ php artisan storage:link
 php artisan serve
 ```
 
-The API runs at `http://localhost:8000`. The `.env.example` is configured for SQLite (`backend/database/database.sqlite`), so no database server is required. To use MySQL or PostgreSQL instead, set `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` in `backend/.env`.
+The API runs at `http://localhost:8000`. MySQL runs locally (XAMPP) on `127.0.0.1:3306` with database `campusfind`, user `campusfind`, password `secret`. Create that database/user once before running the migrations.
 
 ### 2. Frontend
 
@@ -42,7 +43,7 @@ npm install
 npm run dev
 ```
 
-The app runs at `http://localhost:5173`. It reads the API base URL from `frontend/.env`:
+The app runs at `http://localhost:5175`. It reads the API base URL from `frontend/.env`:
 
 ```
 VITE_API_URL=http://localhost:8000/api
