@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev libpq-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
-    pdo_mysql pdo_pgsql pdo_sqlite mbstring \
+    pdo_mysql pdo_pgsql mbstring \
     exif pcntl bcmath gd zip intl \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
