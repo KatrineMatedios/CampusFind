@@ -61,11 +61,19 @@ export function getErrorMessage(error: unknown): string {
     // No response received: network failure, CORS block, mixed-content block,
     // DNS failure, or an unreachable/wrong API URL.
     if (!error.response) {
+      // Detect likely mixed-content (HTTPS page calling HTTP API)
+      const requestUrl = error.config?.url ?? "";
+      const baseUrl = error.config?.baseURL ?? "";
+      const fullUrl = `${baseUrl}${requestUrl}`;
+      if (fullUrl.startsWith("http://") && typeof window !== "undefined" && window.location.protocol === "https:") {
+        return "Mixed content blocked: the page is HTTPS but the API URL uses HTTP. Update VITE_API_URL to use https://.";
+      }
+
       if (error.code === "ERR_NETWORK") {
-        return "Cannot reach the server. Check your internet connection, and make sure the API URL is configured and uses HTTPS.";
+        return "Cannot reach the server. Check your internet connection, verify VITE_API_URL is set to your deployed backend URL (https://.../api), and ensure the backend is deployed and running.";
       }
       if (error.code === "ECONNABORTED") {
-        return "The request timed out. Please try again.";
+        return "The request timed out. The backend may be waking up (free hosting cold start) — wait 30–60 seconds and try again.";
       }
       return (
         error.message ||
@@ -79,8 +87,7 @@ export function getErrorMessage(error: unknown): string {
     return (
       firstError ??
       error.response?.data?.message ??
-      error.message ??
-      "Something went wrong. Please try again."
+      `Server error (${error.response.status}). Please try again.`
     );
   }
   if (error instanceof Error) return error.message;

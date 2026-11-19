@@ -14,6 +14,14 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toISOString(),
+        'app' => config('app.name'),
+        'env' => config('app.env'),
+    ]);
+});
 Route::middleware('throttle:20,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
