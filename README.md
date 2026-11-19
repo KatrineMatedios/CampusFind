@@ -83,6 +83,24 @@ Take note of the Cloud domain (e.g. `https://campusfind-xxxx.us.laravel.app`); y
 
 The backend's `config/cors.php` reads `FRONTEND_URL` and also allows `*.vercel.app`, so preview deployments work too.
 
+### Alternative: Render (backend + database)
+
+Render has no native PHP runtime, so the Laravel API uses the root `Dockerfile`. You do **not** need Docker installed on your PC — Render builds the image from the repo.
+
+1. Create MySQL on Render: **New → MySQL** (or the [one-click MySQL](https://render.com/docs/deploy-mysql) service), attach a disk mounted at `/var/lib/mysql`, and note the **internal** URL (`mysql://user:pass@host:3306/db`).
+2. **New → Web Service** → import `KatrineMatedios/CampusFind`. Render detects `render.yaml`, or set it manually:
+   - Runtime: **Docker**, Dockerfile path: `./Dockerfile`
+   - Health check path: `/api/health`
+3. Set these environment variables (the Blueprint marks the secret ones as `sync: false`):
+   - `APP_KEY` — paste the output of `php artisan key:generate --show`
+   - `APP_URL` — your Render web service URL
+   - `FRONTEND_URL` — your Vercel URL
+   - `DB_URL` — the internal MySQL URL from step 1
+4. Deploy. The entrypoint runs `migrate --force` and starts Apache on Render's `$PORT`. Test `https://<your-service>.onrender.com/api/health`.
+5. In Vercel set `VITE_API_URL` = `https://<your-service>.onrender.com/api` and redeploy.
+
+Uploaded photos are not persisted on Render's default filesystem. Attach an S3-compatible bucket (e.g. Cloudflare R2) and set `FILESYSTEM_DISK=s3` plus `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_BUCKET`, `AWS_REGION`, `AWS_ENDPOINT_URL` and (for a public bucket) `AWS_URL`. `league/flysystem-aws-s3-v3` is already installed.
+
 ## Demo accounts
 
 All seeded accounts use the password `password`.

@@ -1,0 +1,67 @@
+FROM php:8.3-apache
+
+# System libraries required by Laravel's PHP extensions.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+        libzip-dev \
+        libpng-dev \
+        libjpeg62-turbo-dev \
+        libfreetype6-dev \
+        libicu-dev \
+        libonig-dev \
+        libxml2-dev \
+        libcurl4-openssl-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
+        pdo_mysql \
+        mbstring \
+        xml \
+        curl \
+        zip \
+        gd \
+        intl \
+        bcmath \
+        exif \
+        fileinfo \
+    && a2enmod rewrite \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html/backend
+
+# Install PHP dependencies first so the layer is cached between code changes.
+COPY backend/composer.json backend/composer.lock ./
+RUN composer install \
+        --no-dev \
+        --no-interaction \
+        --prefer-dist \
+        --optimize-autoloader \
+        --no-scripts
+
+# Application code.
+COPY backend/ ./
+
+RUN composer dump-autoload --optimize --no-dev \
+    && mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+# Serve Laravel's public directory as the Apache document root.
+RUN sed -ri 's!/var/www/html!/var/www/html/backend/public!g' \
+        /etc/apache2/sites-available/000-default.conf \
+        /etc/apache2/apache2.conf \
+    && printf '%s\n' \
+        '<Directory /var/www/html/backend/public>' \
+        '    AllowOverride All' \
+        '    Require all granted' \
+        '</Directory>' > /etc/apache2/conf-available/laravel.conf \
+    && a2enconf laravel
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+EXPOSE 80
+
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["apache2-foreground"]

@@ -1,0 +1,30 @@
+# Render Blueprint for the Laravel API.
+# The frontend is deployed separately (Vercel or Render Static Site) from /frontend.
+services:
+  - type: web
+    name: campusfind-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        sync: false # e.g. https://campusfind-api.onrender.com
+      - key: APP_KEY
+        sync: false # paste output of: php artisan key:generate --show
+      - key: FRONTEND_URL
+        sync: false # e.g. https://campus-find.vercel.app
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_URL
+        sync: false # internal MySQL URL from your Render MySQL service
+      - key: CACHE_STORE
+        value: database
+      - key: SESSION_DRIVER
+        value: database
+      - key: SEED_DB
+        value: false
