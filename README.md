@@ -3,7 +3,7 @@
 CampusFind is a mobile-first university lost & found app. Students can report lost or found items, browse listings, and file ownership claims for found items. Lost & Found staff can verify claims from the same app using a staff account.
 
 - **Frontend:** React 19 + Vite + TypeScript + Tailwind CSS v4
-- **Backend:** Laravel 12 + Sanctum token authentication + SQLite (MySQL/PostgreSQL compatible)
+- **Backend:** Laravel 12 + Sanctum token authentication + MySQL
 
 ## Project structure
 
@@ -50,6 +50,38 @@ VITE_API_URL=http://localhost:8000/api
 ```
 
 Start the API before the frontend so login and data requests succeed.
+
+## Deployment
+
+The frontend goes to Vercel and the Laravel API goes to Laravel Cloud. This is a monorepo, so each platform needs to know which directory to build.
+
+### 1. Laravel Cloud (backend + database)
+
+1. Go to https://cloud.laravel.com and choose **New application**.
+2. Connect GitHub and select `KatrineMatedios/CampusFind`.
+3. When Cloud detects the monorepo, select the **`backend`** directory as the root.
+4. On the environment canvas click **Add database** → **Laravel MySQL** (same region). Cloud injects `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` automatically — do **not** copy the local XAMPP values into Cloud.
+5. Click **Add bucket** → **Laravel Object Storage**, set it as the **default** disk and make it **public** (item photos, avatars and claim proof images need public URLs). Cloud injects `FILESYSTEM_DISK` and the S3 credentials.
+6. In **Settings → Environment variables** set:
+   - `APP_ENV=production`
+   - `APP_DEBUG=false`
+   - `APP_URL=https://<your-cloud-domain>`
+   - `FRONTEND_URL=https://<your-vercel-app>.vercel.app`
+   - `CACHE_STORE=database`
+   - `SESSION_DRIVER=database`
+7. In **Settings → Deploy commands** use `php artisan migrate --force`. Do not run `storage:link` or `optimize:clear` on Cloud — the filesystem resets on every deploy.
+8. Deploy, then test `https://<your-cloud-domain>/api/health` — it should return `{"status":"ok",...}`.
+
+Take note of the Cloud domain (e.g. `https://campusfind-xxxx.us.laravel.app`); you need it for Vercel.
+
+### 2. Vercel (frontend)
+
+1. Go to https://vercel.com → **Add New → Project** → import `KatrineMatedios/CampusFind`.
+2. Set **Root Directory** to `frontend`, framework **Vite**, build `npm run build`, output `dist`.
+3. In **Settings → Environment Variables** add `VITE_API_URL` = `https://<your-cloud-domain>/api`.
+4. Deploy (or redeploy after adding the variable).
+
+The backend's `config/cors.php` reads `FRONTEND_URL` and also allows `*.vercel.app`, so preview deployments work too.
 
 ## Demo accounts
 
@@ -127,4 +159,4 @@ cd frontend
 npm run build
 ```
 
-Uploaded images are stored on the `public` disk, so run `php artisan storage:link` once after setup. Password reset emails use the `log` mailer by default; the reset link is written to `backend/storage/logs/laravel.log`.
+Uploaded images use Laravel's default filesystem disk (`public` locally, an object-storage bucket on Laravel Cloud), so run `php artisan storage:link` once after local setup. Password reset emails use the `log` mailer by default; the reset link is written to `backend/storage/logs/laravel.log`.

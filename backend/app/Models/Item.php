@@ -33,7 +33,7 @@ class Item extends Model
 
     public function getPhotoUrlAttribute(): ?string
     {
-        return $this->photo ? Storage::disk('public')->url($this->photo) : null;
+        return $this->photo ? Storage::disk()->url($this->photo) : null;
     }
 
     public function reporter(): BelongsTo

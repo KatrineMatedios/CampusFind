@@ -50,10 +50,10 @@ class ProfileController extends Controller
         $user = $request->user();
 
         if ($user->avatar) {
-            Storage::disk('public')->delete($user->avatar);
+            Storage::disk()->delete($user->avatar);
         }
 
-        $user->update(['avatar' => $request->file('avatar')->store('avatars', 'public')]);
+        $user->update(['avatar' => $request->file('avatar')->store('avatars')]);
 
         return response()->json([
             'data' => new UserResource($user->fresh()),

@@ -38,7 +38,7 @@ class Claim extends Model
 
     public function getProofPhotoUrlAttribute(): ?string
     {
-        return $this->proof_photo ? Storage::disk('public')->url($this->proof_photo) : null;
+        return $this->proof_photo ? Storage::disk()->url($this->proof_photo) : null;
     }
 
     public function item(): BelongsTo

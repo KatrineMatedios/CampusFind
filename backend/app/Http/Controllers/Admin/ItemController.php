@@ -88,7 +88,7 @@ class ItemController extends Controller
     public function destroy(Request $request, Item $item): JsonResponse
     {
         if ($item->photo) {
-            Storage::disk('public')->delete($item->photo);
+            Storage::disk()->delete($item->photo);
         }
 
         $name = $item->name;

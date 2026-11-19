@@ -52,7 +52,7 @@ class User extends Authenticatable
 
     public function getAvatarUrlAttribute(): ?string
     {
-        return $this->avatar ? Storage::disk('public')->url($this->avatar) : null;
+        return $this->avatar ? Storage::disk()->url($this->avatar) : null;
     }
 
     public function items(): HasMany

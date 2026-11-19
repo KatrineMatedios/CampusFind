@@ -44,7 +44,7 @@ class ClaimController extends Controller
         abort_if($existing, 422, 'You already have an active claim for this item.');
 
         if ($request->hasFile('proof_photo')) {
-            $data['proof_photo'] = $request->file('proof_photo')->store('claims', 'public');
+            $data['proof_photo'] = $request->file('proof_photo')->store('claims');
         }
 
         $claim = $item->claims()->create([

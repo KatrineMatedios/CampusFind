@@ -61,7 +61,7 @@ class ItemController extends Controller
         $data = $this->validated($request);
 
         if ($request->hasFile('photo')) {
-            $data['photo'] = $request->file('photo')->store('items', 'public');
+            $data['photo'] = $request->file('photo')->store('items');
         }
 
         $item = $request->user()->items()->create($data);
@@ -86,9 +86,9 @@ class ItemController extends Controller
 
         if ($request->hasFile('photo')) {
             if ($item->photo) {
-                Storage::disk('public')->delete($item->photo);
+                Storage::disk()->delete($item->photo);
             }
-            $data['photo'] = $request->file('photo')->store('items', 'public');
+            $data['photo'] = $request->file('photo')->store('items');
         }
 
         $item->update($data);
@@ -110,7 +110,7 @@ class ItemController extends Controller
         abort_unless($item->user_id === $request->user()->id, 403, 'You can only delete your own reports.');
 
         if ($item->photo) {
-            Storage::disk('public')->delete($item->photo);
+            Storage::disk()->delete($item->photo);
         }
 
         $item->delete();
