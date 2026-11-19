@@ -17,6 +17,7 @@ if (!resolvedBaseUrl) {
 
 const api = axios.create({
   baseURL: resolvedBaseUrl,
+  timeout: 60000, // 60s to accommodate cold starts on free hosting tiers
   headers: { Accept: "application/json" },
 });
 

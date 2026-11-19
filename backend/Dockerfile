@@ -1,10 +1,9 @@
-
 FROM php:8.3-apache
 
 RUN apt-get update && apt-get install -y \
     git unzip libzip-dev libicu-dev libonig-dev \
     libxml2-dev libpng-dev libjpeg62-turbo-dev \
-    libfreetype6-dev \
+    libfreetype6-dev libpq-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
     pdo_mysql pdo_pgsql pdo_sqlite mbstring \
@@ -31,6 +30,9 @@ RUN sed -ri \
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
+# Make entrypoint executable
+RUN chmod +x docker-entrypoint.sh
+
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+CMD ["./docker-entrypoint.sh"]
