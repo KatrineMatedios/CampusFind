@@ -89,7 +89,8 @@ Render has no native PHP runtime, so the Laravel API uses the root `Dockerfile`.
 
 1. Create MySQL on Render: **New → MySQL** (or the [one-click MySQL](https://render.com/docs/deploy-mysql) service), attach a disk mounted at `/var/lib/mysql`, and note the **internal** URL (`mysql://user:pass@host:3306/db`).
 2. **New → Web Service** → import `KatrineMatedios/CampusFind`. Render detects `render.yaml`, or set it manually:
-   - Runtime: **Docker**, Dockerfile path: `./Dockerfile`
+   - Runtime: **Docker**
+   - Root Directory: blank / `.` with Dockerfile `./Dockerfile`, **or** `backend` with Dockerfile `./Dockerfile` (both Dockerfiles are included)
    - Health check path: `/api/health`
 3. Set these environment variables (the Blueprint marks the secret ones as `sync: false`):
    - `APP_KEY` — paste the output of `php artisan key:generate --show`
