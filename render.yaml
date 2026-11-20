@@ -17,7 +17,7 @@ services:
       - key: APP_KEY
         sync: false # paste output of: php artisan key:generate --show
       - key: FRONTEND_URL
-        sync: false # e.g. https://campus-find.vercel.app
+        sync: false # e.g. https://campus-find-9uicip0ov-katrinematedios-projects.vercel.app
       - key: DB_CONNECTION
         value: mysql
       - key: DB_URL
