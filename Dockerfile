@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         bcmath \
         exif \
         fileinfo \
-    && a2enmod rewrite \
+    && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -57,6 +57,16 @@ RUN sed -ri 's!/var/www/html!/var/www/html/backend/public!g' \
         '    Require all granted' \
         '</Directory>' > /etc/apache2/conf-available/laravel.conf \
     && a2enconf laravel
+
+# Apache answers OPTIONS requests itself, so Laravel's CORS middleware never
+# sees them. Add the headers at the web-server level for preflight requests.
+RUN printf '%s\n' \
+        '<IfModule mod_headers.c>' \
+        '    Header always setifempty Access-Control-Allow-Origin "*"' \
+        '    Header always setifempty Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"' \
+        '    Header always setifempty Access-Control-Allow-Headers "Content-Type, Authorization, Accept, X-Requested-With, X-XSRF-TOKEN"' \
+        '</IfModule>' > /etc/apache2/conf-available/cors.conf \
+    && a2enconf cors
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
