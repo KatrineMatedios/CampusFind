@@ -12,6 +12,27 @@ cd /var/www/html/backend
 if [ -n "${RENDER:-}" ]; then
     export CACHE_STORE=file
     export SESSION_DRIVER=file
+
+    # Never use the repo's SQLite file in a read-only container.
+    export DB_CONNECTION=mysql
+
+    # Support Render's MySQL env group names when individual DB_* values
+    # were not copied into this web service manually.
+    if [ -z "${DB_HOST:-}" ] && [ -n "${MYSQL_HOST:-}" ]; then
+        export DB_HOST="$MYSQL_HOST"
+    fi
+    if [ -z "${DB_PORT:-}" ] && [ -n "${MYSQL_PORT:-}" ]; then
+        export DB_PORT="$MYSQL_PORT"
+    fi
+    if [ -z "${DB_DATABASE:-}" ] && [ -n "${MYSQL_DATABASE:-}" ]; then
+        export DB_DATABASE="$MYSQL_DATABASE"
+    fi
+    if [ -z "${DB_USERNAME:-}" ] && [ -n "${MYSQL_USER:-}" ]; then
+        export DB_USERNAME="$MYSQL_USER"
+    fi
+    if [ -z "${DB_PASSWORD:-}" ] && [ -n "${MYSQL_PASSWORD:-}" ]; then
+        export DB_PASSWORD="$MYSQL_PASSWORD"
+    fi
 fi
 
 php artisan storage:link --force >/dev/null 2>&1 || true
