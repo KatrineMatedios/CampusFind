@@ -17,7 +17,9 @@ fi
 php artisan storage:link --force >/dev/null 2>&1 || true
 php artisan migrate --force
 
-if [ "${SEED_DB:-false}" = "true" ]; then
+# The seeder is idempotent, so seeding on every Render deploy keeps the demo
+# accounts available without requiring a manual environment change.
+if [ -n "${RENDER:-}" ] || [ "${SEED_DB:-false}" = "true" ]; then
     php artisan db:seed --force
 fi
 
