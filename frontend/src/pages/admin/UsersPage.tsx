@@ -99,7 +99,7 @@ export default function UsersPage() {
       email: user.email,
       college_program: user.college_program ?? "",
       contact_number: user.contact_number ?? "",
-      role: user.role,
+      role: user?.role ?? "student",
       password: "",
     });
     setFormError(null);
@@ -252,7 +252,7 @@ export default function UsersPage() {
                     <td className="px-4 py-3 text-xs font-medium text-stone-700">{u.student_id}</td>
                     <td className="px-4 py-3 text-xs text-stone-600">{u.email}</td>
                     <td className="px-4 py-3">
-                      <Badge variant={roleBadgeVariant(u.role)}>{u.role}</Badge>
+                      <Badge variant={roleBadgeVariant(u?.role)}>{u?.role ?? "student"}</Badge>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={u.is_active ? "success" : "danger"}>
