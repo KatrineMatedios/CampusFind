@@ -2,46 +2,29 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import type { ApiValidationError } from '../types'
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
-const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '')
-const CSRF_URL = `${API_ORIGIN}/sanctum/csrf-cookie`
 
-let csrfRequest: Promise<void> | null = null
+const TOKEN_KEY = 'campusfind_token'
 
-function readCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp(`(^|;\\s*)${name}=([^;]*)`))
-  return match ? decodeURIComponent(match[2]) : null
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY)
 }
 
-export async function ensureCsrfCookie(): Promise<void> {
-  if (csrfRequest) return csrfRequest
-
-  csrfRequest = axios
-    .get(CSRF_URL, { withCredentials: true })
-    .then(() => undefined)
-    .catch(() => undefined)
-    .finally(() => {
-      csrfRequest = null
-    })
-
-  return csrfRequest
+export function setToken(token: string | null): void {
+  if (token) localStorage.setItem(TOKEN_KEY, token)
+  else localStorage.removeItem(TOKEN_KEY)
 }
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
   headers: {
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
   },
 })
 
-api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
-  const method = (config.method ?? 'get').toLowerCase()
-  if (!['get', 'head', 'options'].includes(method)) {
-    await ensureCsrfCookie()
-    const token = readCookie('XSRF-TOKEN')
-    if (token) config.headers.set('X-XSRF-TOKEN', token)
-  }
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = getToken()
+  if (token) config.headers.set('Authorization', `Bearer ${token}`)
   return config
 })
 
@@ -49,6 +32,7 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiValidationError>) => {
     if (error.response?.status === 401) {
+      setToken(null)
       window.dispatchEvent(new CustomEvent('campusfind:unauthenticated'))
     }
     return Promise.reject(error)

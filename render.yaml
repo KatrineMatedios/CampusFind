@@ -3,7 +3,7 @@ services:
     name: campusfind
     runtime: docker
     dockerfilePath: ./Dockerfile
-    dockerContext: .
+    dockerContext: ./backend
     plan: free
     region: oregon
     healthCheckPath: /api/health
@@ -17,3 +17,5 @@ services:
         value: "false"
       - key: APP_KEY
         value: base64:AisSeds8ZvYuLV0jPMGXHtvsVQxCINiSJ+ogE8/fGBE=
+      - key: FRONTEND_URL
+        sync: false

@@ -94,10 +94,10 @@ To reuse your existing `APP_KEY`, uncomment the `APP_KEY` line in `docker-compos
 
 | File | Purpose |
 |---|---|
-| `docker-compose.yml` | App + MariaDB services, volumes, environment |
-| `backend/Dockerfile` | Full-stack image (PHP 8.2 + Apache, builds the React app) |
-| `backend/docker-entrypoint.sh` | Waits for DB, migrates, seeds once, links storage |
-| `Dockerfile` (root) | Frontend-only image (nginx) for static hosts like Vercel/Render |
+| `docker-compose.yml` | Single full-stack app service |
+| `Dockerfile` (root) | Full-stack image: React build + Laravel API + MariaDB |
+| `backend/Dockerfile` | Render image: Laravel API + Apache + MariaDB (context `backend/`) |
+| `start.sh` / `backend/start.sh` | Starts MariaDB, migrates, seeds once, configures Apache port |
 
 Build the full-stack image by hand:
 
@@ -123,22 +123,34 @@ Or use `docker compose up --build` if you prefer a separate database service.
 
 ### On a host such as Render
 
-Use the included `render.yaml` (Blueprint). It builds the root `Dockerfile` — the whole app including MariaDB — so there are **no database values to fill in**. Only set:
+The Render service uses:
+
+```text
+Root Directory:   backend
+Dockerfile:       ./Dockerfile
+Docker context:   ./backend
+```
+
+`backend/Dockerfile` builds Laravel + Apache + MariaDB from the `backend` folder only. No database variables are needed. Set these Render environment variables:
 
 | Key | Value |
 |---|---|
-| `APP_URL` | your service URL |
-| `CORS_ALLOWED_ORIGINS` | only if the UI is on a different domain |
+| `APP_KEY` | a generated Laravel key |
+| `FRONTEND_URL` | your Vercel URL, e.g. `https://campus-find-xxx.vercel.app` |
 
-> Note: data lives inside the container, so it resets when the container restarts. For permanent data, use `backend/Dockerfile` with an external MySQL host instead.
+`APP_URL` is detected from `RENDER_EXTERNAL_URL` automatically. CORS and Sanctum domains are derived from `FRONTEND_URL`.
+
+> Note: data lives inside the container, so it resets when the container restarts. The demo accounts are seeded again automatically.
 
 ## Demo accounts
 
-| Role | Email | Password |
-|---|---|---|
-| Admin | `admin@campusfind.local` | `Admin@12345` |
-| Student | `student@campusfind.local` | `Student@123` |
-| Student | `juan@campusfind.local` | `Student@123` |
+The seeded accounts can be used with either the email or the student ID:
+
+| Role | Student ID | Email | Password |
+|---|---|---|---|
+| Admin | `ADMIN001` | `admin@campusfind.local` | `Admin@12345` |
+| Student | `STU2024001` | `student@campusfind.local` | `Student@123` |
+| Student | `STU2024002` | `juan@campusfind.local` | `Student@123` |
 
 ## Implemented features
 
@@ -168,7 +180,7 @@ Use the included `render.yaml` (Blueprint). It builds the root `Dockerfile` — 
 
 ## Notes
 
-- Authentication uses Laravel Sanctum stateful SPA cookies. The Axios client fetches `/sanctum/csrf-cookie` and sends `X-XSRF-TOKEN` on mutating requests.
+- Authentication uses Laravel Sanctum API tokens. Login/register return a token, the Axios client stores it in `localStorage`, and every request sends `Authorization: Bearer <token>`. This works across Vercel and Render without sharing cookies.
 - Uploaded files are stored in `backend/storage/app/public` and served through the `public/storage` symlink created by `php artisan storage:link`.
 - Password resets and email verification codes are returned by development-only endpoints because mail delivery is not configured. Remove or protect `POST /api/dev/reset-token` before production.
 - Seeded items intentionally have no images; the UI renders illustrated placeholders when an image is missing.

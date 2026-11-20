@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import api from '../api/client'
+import api, { getToken, setToken } from '../api/client'
 import type { User } from '../types'
 
 interface RegisterPayload {
@@ -29,10 +29,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const refreshUser = async () => {
+    if (!getToken()) {
+      setUser(null)
+      setLoading(false)
+      return
+    }
+
     try {
       const { data } = await api.get<{ user: User }>('/user')
-      setUser(data.user)
+      setUser(data.user ?? null)
     } catch {
+      setToken(null)
       setUser(null)
     } finally {
       setLoading(false)
@@ -42,19 +49,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refreshUser()
 
-    const handleUnauthenticated = () => setUser(null)
+    const handleUnauthenticated = () => {
+      setToken(null)
+      setUser(null)
+    }
     window.addEventListener('campusfind:unauthenticated', handleUnauthenticated)
     return () => window.removeEventListener('campusfind:unauthenticated', handleUnauthenticated)
   }, [])
 
   const login = async (loginValue: string, password: string): Promise<User> => {
-    const { data } = await api.post<{ user: User }>('/login', { login: loginValue, password })
+    const { data } = await api.post<{ user: User; token: string }>('/login', {
+      login: loginValue,
+      password,
+    })
+
+    if (!data?.user || !data?.token) {
+      throw new Error('Invalid response from the server.')
+    }
+
+    setToken(data.token)
     setUser(data.user)
     return data.user
   }
 
   const register = async (payload: RegisterPayload) => {
-    const { data } = await api.post<{ user: User }>('/register', payload)
+    const { data } = await api.post<{ user: User; token: string }>('/register', payload)
+
+    if (!data?.user || !data?.token) {
+      throw new Error('Invalid response from the server.')
+    }
+
+    setToken(data.token)
     setUser(data.user)
   }
 
@@ -62,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api.post('/logout')
     } finally {
+      setToken(null)
       setUser(null)
     }
   }

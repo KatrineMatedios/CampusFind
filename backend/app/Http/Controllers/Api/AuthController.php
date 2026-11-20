@@ -30,8 +30,7 @@ class AuthController extends Controller
             'is_active' => true,
         ]);
 
-        Auth::login($user);
-        $request->session()->regenerate();
+        $token = $user->createToken('campusfind')->plainTextToken;
 
         notify_user(
             $user,
@@ -44,6 +43,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Account created successfully.',
             'user' => new UserResource($user),
+            'token' => $token,
         ], 201);
     }
 
@@ -55,43 +55,41 @@ class AuthController extends Controller
         ]);
 
         $field = filter_var($credentials['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'student_id';
-        $attempt = [
-            $field => $field === 'student_id' ? strtoupper($credentials['login']) : strtolower($credentials['login']),
-            'password' => $credentials['password'],
-        ];
+        $value = $field === 'student_id'
+            ? strtoupper($credentials['login'])
+            : strtolower($credentials['login']);
 
-        if (! Auth::attempt($attempt)) {
+        /** @var User|null $user */
+        $user = User::where($field, $value)->first();
+
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             return response()->json(['message' => 'Invalid email/student ID or password.'], 422);
         }
 
-        /** @var User $user */
-        $user = Auth::user();
-
         if (! $user->is_active) {
-            Auth::logout();
-            $request->session()->invalidate();
-
             return response()->json(['message' => 'This account has been deactivated. Please contact support.'], 403);
         }
 
-        $request->session()->regenerate();
+        $token = $user->createToken('campusfind')->plainTextToken;
         log_activity('logged_in', 'Signed in to CampusFind.', $user);
 
         return response()->json([
             'message' => 'Signed in successfully.',
             'user' => new UserResource($user),
+            'token' => $token,
         ]);
     }
 
     public function logout(Request $request)
     {
-        if (Auth::check()) {
-            log_activity('logged_out', 'Signed out of CampusFind.', Auth::user());
+        $user = $request->user();
+
+        if ($user) {
+            log_activity('logged_out', 'Signed out of CampusFind.', $user);
+            $user->currentAccessToken()?->delete();
         }
 
         Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
 
         return response()->json(['message' => 'Signed out successfully.']);
     }
