@@ -1,7 +1,8 @@
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { Spinner } from './components/ui'
 import { AppShell } from './components/AppShell'
-import { AuthProvider, useAuth } from './context/AuthContext'
+import { AUTO_ADMIN_LOGIN, AuthProvider, useAuth } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
 import { ForgotPassword } from './pages/auth/ForgotPassword'
 import { Login } from './pages/auth/Login'
@@ -39,10 +40,26 @@ function FullPageLoader() {
 }
 
 function ProtectedRoute({ requireAdmin = false }: { requireAdmin?: boolean }) {
-  const { isAuthenticated, isAdmin, loading } = useAuth()
+  const { isAuthenticated, isAdmin, loading, demoAdminLogin } = useAuth()
   const location = useLocation()
+  const attemptedAutoLogin = useRef(false)
+  const [autoLoggingIn, setAutoLoggingIn] = useState(false)
 
-  if (loading) return <FullPageLoader />
+  useEffect(() => {
+    if (
+      requireAdmin &&
+      AUTO_ADMIN_LOGIN &&
+      !loading &&
+      !attemptedAutoLogin.current &&
+      (!isAuthenticated || !isAdmin)
+    ) {
+      attemptedAutoLogin.current = true
+      setAutoLoggingIn(true)
+      void demoAdminLogin().finally(() => setAutoLoggingIn(false))
+    }
+  }, [requireAdmin, loading, isAuthenticated, isAdmin, demoAdminLogin])
+
+  if (loading || autoLoggingIn) return <FullPageLoader />
   if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   if (requireAdmin && !isAdmin) return <Navigate to="/home" replace />
 
@@ -91,16 +108,18 @@ function AppRoutes() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/personal-info" element={<PersonalInfo />} />
           <Route path="/help" element={<Help />} />
+        </Route>
+      </Route>
 
-          <Route element={<ProtectedRoute requireAdmin />}>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/reports" element={<AdminReports />} />
-            <Route path="/admin/claims" element={<AdminClaims />} />
-            <Route path="/admin/categories" element={<AdminCategories />} />
-            <Route path="/admin/logs" element={<AdminActivityLogs />} />
-            <Route path="/admin/support" element={<AdminSupport />} />
-          </Route>
+      <Route element={<ProtectedRoute requireAdmin />}>
+        <Route element={<AppShell />}>
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/reports" element={<AdminReports />} />
+          <Route path="/admin/claims" element={<AdminClaims />} />
+          <Route path="/admin/categories" element={<AdminCategories />} />
+          <Route path="/admin/logs" element={<AdminActivityLogs />} />
+          <Route path="/admin/support" element={<AdminSupport />} />
         </Route>
       </Route>
 

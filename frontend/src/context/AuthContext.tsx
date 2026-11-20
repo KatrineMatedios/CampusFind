@@ -17,6 +17,7 @@ interface AuthContextValue {
   isAdmin: boolean
   login: (login: string, password: string) => Promise<User>
   register: (payload: RegisterPayload) => Promise<void>
+  demoAdminLogin: () => Promise<boolean>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
   setUser: (user: User | null) => void
@@ -24,7 +25,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
-const AUTO_ADMIN_LOGIN = import.meta.env.VITE_AUTO_ADMIN_LOGIN === 'true'
+export const AUTO_ADMIN_LOGIN = import.meta.env.VITE_AUTO_ADMIN_LOGIN === 'true'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -32,21 +33,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = async () => {
     if (!getToken()) {
-      if (AUTO_ADMIN_LOGIN) {
-        try {
-          const { data } = await api.post<{ user: User; token: string }>('/demo/admin-login')
-
-          if (data?.user && data?.token) {
-            setToken(data.token)
-            setUser(data.user)
-            setLoading(false)
-            return
-          }
-        } catch {
-          // Fall through to the normal login page if demo auto-login fails.
-        }
-      }
-
       setUser(null)
       setLoading(false)
       return
@@ -100,6 +86,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user)
   }
 
+  const demoAdminLogin = async (): Promise<boolean> => {
+    try {
+      const { data } = await api.post<{ user: User; token: string }>('/demo/admin-login')
+
+      if (!data?.user || !data?.token) return false
+
+      setToken(data.token)
+      setUser(data.user)
+      return true
+    } catch {
+      return false
+    }
+  }
+
   const logout = async () => {
     try {
       await api.post('/logout')
@@ -116,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAdmin: user?.role === 'admin',
     login,
     register,
+    demoAdminLogin,
     logout,
     refreshUser,
     setUser,

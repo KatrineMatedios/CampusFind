@@ -181,7 +181,7 @@ The seeded accounts can be used with either the email or the student ID:
 ## Notes
 
 - Authentication uses Laravel Sanctum API tokens. Login/register return a token, the Axios client stores it in `localStorage`, and every request sends `Authorization: Bearer <token>`. This works across Vercel and Render without sharing cookies.
-- Demo auto-admin login is enabled with `VITE_AUTO_ADMIN_LOGIN=true` (Vercel) and `DEMO_AUTO_LOGIN=true` (Render). When enabled, every visitor is signed in as the seeded admin automatically. Set either value to `false` to require the normal login form.
+- Demo auto-admin login is enabled with `VITE_AUTO_ADMIN_LOGIN=true` (Vercel) and `DEMO_AUTO_LOGIN=true` (Render). When enabled, opening any `/admin` page signs in as the seeded admin automatically; the normal `/login` page is unchanged. Set either value to `false` to require admin credentials.
 - Uploaded files are stored in `backend/storage/app/public` and served through the `public/storage` symlink created by `php artisan storage:link`.
 - Password resets and email verification codes are returned by development-only endpoints because mail delivery is not configured. Remove or protect `POST /api/dev/reset-token` before production.
 - Seeded items intentionally have no images; the UI renders illustrated placeholders when an image is missing.
