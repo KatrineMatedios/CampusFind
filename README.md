@@ -104,14 +104,14 @@ Uploaded photos are not persisted on Render's default filesystem. Attach an S3-c
 
 ## Demo accounts
 
-All seeded accounts use the password `password`.
+Student demo accounts use the password `password`; the administrator account uses `admin123`.
 
 | Role | Student ID | Email |
 | --- | --- | --- |
 | Student (Maria Santos) | `2024-00123` | `maria.santos@university.edu` |
 | Student (John Cruz) | `2024-00456` | `john.cruz@university.edu` |
 | Student (Alyssa Reyes) | `2023-00789` | `alyssa.reyes@university.edu` |
-| Lost & Found staff | `STAFF-0001` | `lostandfound@university.edu` |
+| Administrator | `STAFF-0001` | `admin@gmail.com` (password `admin123`) |
 
 You can log in with either the student ID or the email address. Run `php artisan migrate:fresh --seed` at any time to restore the demo data (4 users, 11 items, seeded claims and notifications).
 

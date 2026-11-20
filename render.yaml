@@ -29,4 +29,4 @@ services:
       - key: SESSION_DRIVER
         value: file
       - key: SEED_DB
-        value: false
+        value: true

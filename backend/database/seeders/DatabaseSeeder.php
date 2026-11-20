@@ -15,6 +15,11 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Keep seeding idempotent so SEED_DB=true can stay enabled on Render.
+        if (User::where('student_id', '2024-00123')->exists()) {
+            return;
+        }
+
         $categories = collect([
             ['name' => 'Electronics', 'slug' => 'electronics'],
             ['name' => 'Keys', 'slug' => 'keys'],
