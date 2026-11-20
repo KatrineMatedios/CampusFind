@@ -80,6 +80,35 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Demo-only helper used by the hosted Vite app to sign in as admin without
+     * showing a login form. Controlled by DEMO_AUTO_LOGIN on the server.
+     */
+    public function demoAdminLogin()
+    {
+        $enabled = filter_var(env('DEMO_AUTO_LOGIN', 'true'), FILTER_VALIDATE_BOOLEAN);
+
+        if (! $enabled) {
+            return response()->json(['message' => 'Demo auto-login is disabled.'], 403);
+        }
+
+        /** @var User|null $user */
+        $user = User::where('role', 'admin')
+            ->where('is_active', true)
+            ->orderBy('id')
+            ->first();
+
+        if (! $user) {
+            return response()->json(['message' => 'No active admin account is available.'], 404);
+        }
+
+        return response()->json([
+            'message' => 'Signed in as demo admin.',
+            'user' => new UserResource($user),
+            'token' => $user->createToken('campusfind-demo-admin')->plainTextToken,
+        ]);
+    }
+
     public function logout(Request $request)
     {
         $user = $request->user();

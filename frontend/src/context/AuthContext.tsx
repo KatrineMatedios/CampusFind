@@ -24,12 +24,29 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
+const AUTO_ADMIN_LOGIN = import.meta.env.VITE_AUTO_ADMIN_LOGIN === 'true'
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
   const refreshUser = async () => {
     if (!getToken()) {
+      if (AUTO_ADMIN_LOGIN) {
+        try {
+          const { data } = await api.post<{ user: User; token: string }>('/demo/admin-login')
+
+          if (data?.user && data?.token) {
+            setToken(data.token)
+            setUser(data.user)
+            setLoading(false)
+            return
+          }
+        } catch {
+          // Fall through to the normal login page if demo auto-login fails.
+        }
+      }
+
       setUser(null)
       setLoading(false)
       return

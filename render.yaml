@@ -19,3 +19,5 @@ services:
         value: base64:AisSeds8ZvYuLV0jPMGXHtvsVQxCINiSJ+ogE8/fGBE=
       - key: FRONTEND_URL
         sync: false
+      - key: DEMO_AUTO_LOGIN
+        value: "true"

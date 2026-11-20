@@ -26,6 +26,7 @@ export QUEUE_CONNECTION=sync
 export SESSION_DRIVER=file
 export SESSION_DOMAIN=
 export SESSION_SECURE_COOKIE=false
+export DEMO_AUTO_LOGIN="${DEMO_AUTO_LOGIN:-true}"
 
 upsert_env() {
     key="$1"

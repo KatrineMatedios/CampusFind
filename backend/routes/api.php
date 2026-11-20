@@ -19,6 +19,7 @@ Route::get('/categories', [CategoryController::class, 'index']);
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::post('/demo/admin-login', [AuthController::class, 'demoAdminLogin'])->middleware('throttle:10,1');
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/dev/reset-token', [AuthController::class, 'developmentResetToken']);
