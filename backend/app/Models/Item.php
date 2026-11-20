@@ -2,70 +2,66 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
 
 class Item extends Model
 {
+    /** @use HasFactory<\Database\Factories\ItemFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'user_id',
-        'type',
-        'name',
         'category_id',
-        'date_reported',
-        'location',
+        'item_name',
         'description',
-        'photo',
-        'status',
+        'item_type',
+        'location',
+        'lost_found_date',
+        'date_reported',
+        'item_status',
+        'additional_information',
     ];
-
-    protected $appends = ['photo_url'];
 
     protected function casts(): array
     {
         return [
-            'date_reported' => 'date:Y-m-d',
+            'lost_found_date' => 'date',
+            'date_reported' => 'datetime',
         ];
     }
 
-    public function getPhotoUrlAttribute(): ?string
+    protected $appends = ['image_url', 'image_urls'];
+
+    public function user()
     {
-        return $this->photo ? Storage::disk()->url($this->photo) : null;
+        return $this->belongsTo(User::class);
     }
 
-    public function reporter(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
-
-    public function category(): BelongsTo
+    public function category()
     {
         return $this->belongsTo(Category::class);
     }
 
-    public function claims(): HasMany
+    public function images()
+    {
+        return $this->hasMany(ItemImage::class)->orderBy('is_primary', 'desc')->orderBy('id');
+    }
+
+    public function claims()
     {
         return $this->hasMany(Claim::class);
     }
 
-    public function scopeFilter(Builder $query, array $filters): Builder
+    public function getImageUrlAttribute(): ?string
     {
-        return $query
-            ->when($filters['type'] ?? null, fn (Builder $q, string $type) => $q->where('type', $type))
-            ->when($filters['category'] ?? null, function (Builder $q, string $category) {
-                $q->whereHas('category', fn (Builder $c) => $c->where('id', $category)->orWhere('slug', $category));
-            })
-            ->when($filters['status'] ?? null, fn (Builder $q, string $status) => $q->where('status', $status))
-            ->when($filters['search'] ?? null, function (Builder $q, string $search) {
-                $like = '%'.trim($search).'%';
-                $q->where(function (Builder $inner) use ($like) {
-                    $inner->where('name', 'like', $like)
-                        ->orWhere('description', 'like', $like)
-                        ->orWhere('location', 'like', $like);
-                });
-            });
+        $image = $this->images->first();
+
+        return $image?->url;
+    }
+
+    public function getImageUrlsAttribute(): array
+    {
+        return $this->images->pluck('url')->filter()->values()->all();
     }
 }

@@ -2,29 +2,26 @@
 
 namespace App\Models;
 
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
+    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'first_name',
-        'last_name',
+        'name',
         'student_id',
         'email',
-        'college_program',
-        'contact_number',
-        'avatar',
-        'role',
         'password',
+        'phone',
+        'profile_photo_path',
+        'role',
+        'is_active',
+        'email_verified_at',
     ];
 
     protected $hidden = [
@@ -32,46 +29,51 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    protected $appends = [
-        'full_name',
-        'avatar_url',
-    ];
-
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
-    public function getFullNameAttribute(): string
+    protected $appends = ['profile_photo_url'];
+
+    public function getProfilePhotoUrlAttribute(): ?string
     {
-        return trim("{$this->first_name} {$this->last_name}");
+        return $this->profile_photo_path
+            ? asset('storage/'.$this->profile_photo_path)
+            : null;
     }
 
-    public function getAvatarUrlAttribute(): ?string
-    {
-        return $this->avatar ? Storage::disk()->url($this->avatar) : null;
-    }
-
-    public function items(): HasMany
+    public function items()
     {
         return $this->hasMany(Item::class);
     }
 
-    public function claims(): HasMany
+    public function claims()
     {
-        return $this->hasMany(Claim::class);
+        return $this->hasMany(Claim::class, 'claimant_id');
     }
 
-    public function activityLogs(): HasMany
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    public function activityLogs()
     {
         return $this->hasMany(ActivityLog::class);
     }
 
-    public function isStaff(): bool
+    public function supportTickets()
     {
-        return in_array($this->role, ['staff', 'admin'], true);
+        return $this->hasMany(SupportTicket::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 }

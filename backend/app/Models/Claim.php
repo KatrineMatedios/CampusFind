@@ -2,52 +2,50 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class Claim extends Model
 {
+    /** @use HasFactory<\Database\Factories\ClaimFactory> */
+    use HasFactory;
+
     protected $fillable = [
         'item_id',
-        'user_id',
-        'identifiers',
-        'proof_photo',
-        'pickup_location',
-        'pickup_time',
-        'qr_code',
+        'claimant_id',
+        'reason',
+        'proof_path',
         'status',
+        'verification_code',
+        'reviewed_by',
+        'reviewed_at',
     ];
-
-    protected $appends = ['proof_photo_url'];
 
     protected function casts(): array
     {
-        return [
-            'pickup_time' => 'datetime',
-        ];
+        return ['reviewed_at' => 'datetime'];
     }
 
-    protected static function booted(): void
-    {
-        static::creating(function (Claim $claim) {
-            $claim->qr_code ??= 'CF-'.strtoupper(Str::random(4)).'-'.strtoupper(Str::random(4)).'-'.strtoupper(Str::random(4));
-        });
-    }
+    protected $appends = ['proof_url'];
 
-    public function getProofPhotoUrlAttribute(): ?string
-    {
-        return $this->proof_photo ? Storage::disk()->url($this->proof_photo) : null;
-    }
-
-    public function item(): BelongsTo
+    public function item()
     {
         return $this->belongsTo(Item::class);
     }
 
-    public function claimant(): BelongsTo
+    public function claimant()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'claimant_id');
+    }
+
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function getProofUrlAttribute(): ?string
+    {
+        return $this->proof_path ? Storage::url($this->proof_path) : null;
     }
 }

@@ -1,93 +1,80 @@
 <?php
 
-use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\FlagController as AdminFlagController;
-use App\Http\Controllers\Admin\ItemController as AdminItemController;
-use App\Http\Controllers\Admin\NoticeController as AdminNoticeController;
-use App\Http\Controllers\Admin\SettingController as AdminSettingController;
-use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ClaimController;
-use App\Http\Controllers\ItemController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Api\ActivityController;
+use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\ClaimController;
+use App\Http\Controllers\Api\ItemController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\SupportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
-    return response()->json([
-        'status' => 'ok',
-        'timestamp' => now()->toISOString(),
-        'app' => config('app.name'),
-        'env' => config('app.env'),
-    ]);
+    return response()->json(['status' => 'ok', 'app' => config('app.name')]);
 });
-Route::middleware('throttle:20,1')->group(function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
-});
+
+Route::get('/categories', [CategoryController::class, 'index']);
+
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/dev/reset-token', [AuthController::class, 'developmentResetToken']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/user', [AuthController::class, 'user']);
 
-    // Items and discovery
-    Route::get('/items/recent-lost', [ItemController::class, 'recentLost']);
     Route::get('/items', [ItemController::class, 'index']);
     Route::post('/items', [ItemController::class, 'store']);
-    Route::get('/items/{item}', [ItemController::class, 'show']);
-    Route::put('/items/{item}', [ItemController::class, 'update']);
-    Route::delete('/items/{item}', [ItemController::class, 'destroy']);
-    Route::get('/categories', [ItemController::class, 'categories']);
-    Route::get('/dashboard/stats', [ItemController::class, 'stats']);
+    Route::get('/items/{id}', [ItemController::class, 'show'])->whereNumber('id');
+    Route::put('/items/{id}', [ItemController::class, 'update'])->whereNumber('id');
+    Route::delete('/items/{id}', [ItemController::class, 'destroy'])->whereNumber('id');
 
-    // My reports
-    Route::get('/my-reports/resolved', [ItemController::class, 'resolvedReports']);
     Route::get('/my-reports', [ItemController::class, 'myReports']);
+    Route::post('/reports/lost', [ItemController::class, 'reportLost']);
+    Route::post('/reports/found', [ItemController::class, 'reportFound']);
 
-    // Claims
-    Route::post('/items/{item}/claims', [ClaimController::class, 'store']);
-    Route::get('/claims/{claim}', [ClaimController::class, 'show']);
-    Route::middleware('staff')->group(function () {
-        Route::get('/claims', [ClaimController::class, 'index']);
-        Route::patch('/claims/{claim}/status', [ClaimController::class, 'updateStatus']);
-    });
+    Route::get('/claims', [ClaimController::class, 'index']);
+    Route::post('/claims', [ClaimController::class, 'store']);
+    Route::get('/claims/verify/{code}', [ClaimController::class, 'verify']);
+    Route::get('/claims/{id}', [ClaimController::class, 'show'])->whereNumber('id');
+    Route::put('/claims/{id}', [ClaimController::class, 'update'])->whereNumber('id');
 
-    // Admin dashboard
-    Route::middleware('staff')->prefix('admin')->group(function () {
-        Route::get('stats', [DashboardController::class, 'stats']);
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::put('/notifications/read-all', [NotificationController::class, 'markAllRead']);
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markRead'])->whereNumber('id');
 
-        Route::get('users', [AdminUserController::class, 'index']);
-        Route::post('users', [AdminUserController::class, 'store']);
-        Route::put('users/{user}', [AdminUserController::class, 'update']);
-        Route::patch('users/{user}/status', [AdminUserController::class, 'updateStatus']);
-        Route::delete('users/{user}', [AdminUserController::class, 'destroy']);
-
-        Route::get('items', [AdminItemController::class, 'index']);
-        Route::put('items/{item}', [AdminItemController::class, 'update']);
-        Route::patch('items/{item}/status', [AdminItemController::class, 'updateStatus']);
-        Route::delete('items/{item}', [AdminItemController::class, 'destroy']);
-
-        Route::get('flags', [AdminFlagController::class, 'index']);
-        Route::post('flags', [AdminFlagController::class, 'store']);
-        Route::patch('flags/{flag}', [AdminFlagController::class, 'update']);
-
-        Route::get('activity', [AdminActivityController::class, 'index']);
-        Route::get('settings', [AdminSettingController::class, 'index']);
-        Route::put('settings', [AdminSettingController::class, 'update']);
-        Route::post('notices', [AdminNoticeController::class, 'store']);
-    });
-
-    // Profile
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
-    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
-    Route::get('/profile/activity', [ProfileController::class, 'activity']);
+    Route::post('/profile/email/code', [ProfileController::class, 'sendVerificationCode']);
+    Route::post('/profile/email/verify', [ProfileController::class, 'verifyEmail']);
 
-    // Notifications
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead']);
-    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markRead']);
+    Route::get('/activity', [ActivityController::class, 'index']);
+    Route::get('/support-tickets', [SupportController::class, 'index']);
+    Route::post('/support-tickets', [SupportController::class, 'store']);
+
+    Route::middleware('role:admin')->prefix('admin')->group(function () {
+        Route::get('/dashboard', [AdminController::class, 'dashboard']);
+        Route::get('/users', [AdminController::class, 'users']);
+        Route::put('/users/{id}/status', [AdminController::class, 'updateUserStatus'])->whereNumber('id');
+
+        Route::get('/reports', [AdminController::class, 'reports']);
+        Route::put('/reports/{id}/status', [AdminController::class, 'updateReportStatus'])->whereNumber('id');
+        Route::delete('/reports/{id}', [AdminController::class, 'deleteReport'])->whereNumber('id');
+
+        Route::get('/claims', [AdminController::class, 'claims']);
+        Route::put('/claims/{id}/status', [AdminController::class, 'updateClaimStatus'])->whereNumber('id');
+
+        Route::get('/categories', [CategoryController::class, 'index']);
+        Route::post('/categories', [CategoryController::class, 'store']);
+        Route::put('/categories/{id}', [CategoryController::class, 'update'])->whereNumber('id');
+        Route::delete('/categories/{id}', [CategoryController::class, 'destroy'])->whereNumber('id');
+
+        Route::get('/activity', [AdminController::class, 'activityLogs']);
+        Route::get('/support-tickets', [AdminController::class, 'supportTickets']);
+        Route::put('/support-tickets/{id}', [AdminController::class, 'respondTicket'])->whereNumber('id');
+    });
 });

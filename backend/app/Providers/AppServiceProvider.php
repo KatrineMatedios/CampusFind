@@ -2,28 +2,23 @@
 
 namespace App\Providers;
 
-use Illuminate\Auth\Notifications\ResetPassword;
-use Illuminate\Routing\UrlGenerator;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /**
+     * Register any application services.
+     */
     public function register(): void
     {
         //
     }
 
-    public function boot(UrlGenerator $url): void
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
     {
-        if (app()->environment('production')) {
-            $url->forceScheme('https');
-        }
-
-        ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
-            $frontend = rtrim(env('FRONTEND_URL', 'http://localhost:5175'), '/');
-
-            return $frontend.'/reset-password?token='.urlencode($token)
-                .'&email='.urlencode($notifiable->getEmailForPasswordReset());
-        });
+        //
     }
 }
