@@ -12,6 +12,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AdminRoute from "@/components/auth/AdminRoute";
 import GuestRoute from "@/components/auth/GuestRoute";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Auth pages
 import LoginPage from "@/pages/auth/LoginPage";
@@ -111,8 +112,10 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );
