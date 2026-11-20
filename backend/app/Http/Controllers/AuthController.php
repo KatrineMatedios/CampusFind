@@ -10,72 +10,101 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class AuthController extends Controller
 {
     public function register(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'first_name' => ['required', 'string', 'max:100'],
-            'last_name' => ['required', 'string', 'max:100'],
-            'student_id' => ['required', 'string', 'max:50', 'unique:users,student_id'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'college_program' => ['nullable', 'string', 'max:150'],
-            'contact_number' => ['nullable', 'string', 'max:30'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'terms_accepted' => ['accepted'],
-        ]);
+        try {
+            $data = $request->validate([
+                'first_name' => ['required', 'string', 'max:100'],
+                'last_name' => ['required', 'string', 'max:100'],
+                'student_id' => ['required', 'string', 'max:50', 'unique:users,student_id'],
+                'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+                'college_program' => ['nullable', 'string', 'max:150'],
+                'contact_number' => ['nullable', 'string', 'max:30'],
+                'password' => ['required', 'string', 'min:8', 'confirmed'],
+                'terms_accepted' => ['accepted'],
+            ]);
 
-        $user = User::create([
-            'first_name' => $data['first_name'],
-            'last_name' => $data['last_name'],
-            'student_id' => $data['student_id'],
-            'email' => $data['email'],
-            'college_program' => $data['college_program'] ?? null,
-            'contact_number' => $data['contact_number'] ?? null,
-            'role' => 'student',
-            'password' => $data['password'],
-        ]);
+            $user = User::create([
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'student_id' => $data['student_id'],
+                'email' => $data['email'],
+                'college_program' => $data['college_program'] ?? null,
+                'contact_number' => $data['contact_number'] ?? null,
+                'role' => 'student',
+                'password' => $data['password'],
+            ]);
 
-        $token = $user->createToken('campusfind')->plainTextToken;
+            $token = $user->createToken('campusfind')->plainTextToken;
 
-        return response()->json([
-            'user' => new UserResource($user),
-            'token' => $token,
-        ], 201);
+            return response()->json([
+                'user' => new UserResource($user),
+                'token' => $token,
+            ], 201);
+        } catch (Throwable $e) {
+            report($e);
+
+            if ($request->header('X-Debug') === 'campusfind-debug') {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ], 500);
+            }
+
+            throw $e;
+        }
     }
 
     public function login(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'identifier' => ['required', 'string'],
-            'password' => ['required', 'string'],
-        ]);
-
-        $identifier = trim($data['identifier']);
-        $user = User::query()
-            ->where('email', $identifier)
-            ->orWhere('student_id', $identifier)
-            ->first();
-
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
-            throw ValidationException::withMessages([
-                'identifier' => ['These credentials do not match our records.'],
+        try {
+            $data = $request->validate([
+                'identifier' => ['required', 'string'],
+                'password' => ['required', 'string'],
             ]);
-        }
 
-        if (! $user->is_active) {
-            throw ValidationException::withMessages([
-                'identifier' => ['This account has been deactivated. Please contact the administrator.'],
+            $identifier = trim($data['identifier']);
+            $user = User::query()
+                ->where('email', $identifier)
+                ->orWhere('student_id', $identifier)
+                ->first();
+
+            if (! $user || ! Hash::check($data['password'], $user->password)) {
+                throw ValidationException::withMessages([
+                    'identifier' => ['These credentials do not match our records.'],
+                ]);
+            }
+
+            if (! $user->is_active) {
+                throw ValidationException::withMessages([
+                    'identifier' => ['This account has been deactivated. Please contact the administrator.'],
+                ]);
+            }
+
+            $token = $user->createToken($request->boolean('remember') ? 'campusfind-remembered' : 'campusfind')->plainTextToken;
+
+            return response()->json([
+                'user' => new UserResource($user),
+                'token' => $token,
             ]);
+        } catch (Throwable $e) {
+            report($e);
+
+            if ($request->header('X-Debug') === 'campusfind-debug') {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ], 500);
+            }
+
+            throw $e;
         }
-
-        $token = $user->createToken($request->boolean('remember') ? 'campusfind-remembered' : 'campusfind')->plainTextToken;
-
-        return response()->json([
-            'user' => new UserResource($user),
-            'token' => $token,
-        ]);
     }
 
     public function me(Request $request): JsonResponse
