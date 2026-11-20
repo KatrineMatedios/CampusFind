@@ -40,7 +40,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       try {
         const currentUser = await authService.me();
-        if (active) setUser(currentUser);
+        if (active && currentUser) {
+          setUser(currentUser);
+        } else {
+          localStorage.removeItem(TOKEN_KEY);
+        }
       } catch {
         localStorage.removeItem(TOKEN_KEY);
       } finally {
@@ -56,6 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (payload: LoginPayload) => {
     const response = await authService.login(payload);
+    if (!response?.user || !response?.token) {
+      throw new Error(response?.message ?? "Unexpected response from the server.");
+    }
     localStorage.setItem(TOKEN_KEY, response.token);
     setUser(response.user);
     return response.user;
@@ -63,6 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = useCallback(async (payload: RegisterPayload) => {
     const response = await authService.register(payload);
+    if (!response?.user || !response?.token) {
+      throw new Error(response?.message ?? "Unexpected response from the server.");
+    }
     localStorage.setItem(TOKEN_KEY, response.token);
     setUser(response.user);
     return response.user;
