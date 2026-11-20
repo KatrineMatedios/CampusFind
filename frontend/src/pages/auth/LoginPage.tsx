@@ -28,7 +28,11 @@ export default function LoginPage() {
     try {
       const user = await login({ identifier, password, remember });
       const destination =
-        from !== "/" ? from : user.role === "admin" || user.role === "staff" ? "/admin" : "/";
+        from !== "/"
+          ? from
+          : user?.role === "admin" || user?.role === "staff"
+            ? "/admin"
+            : "/";
       navigate(destination, { replace: true });
     } catch (err) {
       setError(getErrorMessage(err));

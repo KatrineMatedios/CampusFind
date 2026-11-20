@@ -7,6 +7,13 @@ sed -i "s|<VirtualHost \*:80>|<VirtualHost *:${PORT}>|" /etc/apache2/sites-avail
 
 cd /var/www/html/backend
 
+# Render sets RENDER=true. Its database cache tables are not always available
+# to the running web process, so use file-backed cache/sessions there.
+if [ -n "${RENDER:-}" ]; then
+    export CACHE_STORE=file
+    export SESSION_DRIVER=file
+fi
+
 php artisan storage:link --force >/dev/null 2>&1 || true
 php artisan migrate --force
 

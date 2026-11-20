@@ -8,13 +8,25 @@ import type {
 interface AuthResponse {
   user: User;
   token: string;
+  message?: string;
+}
+
+function requireAuthResponse(data: AuthResponse | undefined): AuthResponse {
+  if (!data?.user || !data?.token) {
+    throw new Error(data?.message ?? "Unexpected response from the server.");
+  }
+  return data;
 }
 
 export const login = (payload: LoginPayload) =>
-  api.post<AuthResponse>("/login", payload).then((r) => r.data);
+  api
+    .post<AuthResponse>("/login", payload)
+    .then((r) => requireAuthResponse(r.data));
 
 export const register = (payload: RegisterPayload) =>
-  api.post<AuthResponse>("/register", payload).then((r) => r.data);
+  api
+    .post<AuthResponse>("/register", payload)
+    .then((r) => requireAuthResponse(r.data));
 
 export const me = () =>
   api.get<{ data: User }>("/me").then((r) => r.data.data);
